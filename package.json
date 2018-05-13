@@ -4,7 +4,8 @@
   "description": "",
   "main": "app.js",
   "scripts": {
-    "start": "parse-server --appId r2iHRgNfOM8lih4 --masterKey KQdF126IZFZarl4mLAGu5ix6h --databaseURI mongodb://admin:Es0REXOXP7KC04f2kngktBNwC@ds217970.mlab.com:17970/supfile",
+    "start": "node app.js",
+    "minio-server": "sudo minio server /data",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
@@ -12,9 +13,11 @@
   "dependencies": {
     "body-parser": "^1.18.2",
     "express": "^4.16.3",
+    "minio": "^5.0.2",
     "parse-server": "^2.7.4"
   },
   "devDependencies": {
+    "@types/minio": "^5.1.0",
     "@types/parse": "^1.11.0"
   }
 }
