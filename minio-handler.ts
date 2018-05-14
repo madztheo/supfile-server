@@ -30,4 +30,82 @@ export class MinioHandler {
       });
     });
   }
+
+  removeBucket(bucketName: string) {
+    return new Promise((resolve, reject) => {
+      MinioHandler.minioClient.removeBucket(bucketName, err => {
+        if (err) {
+          console.log("Error removing bucket.", err);
+          reject(err);
+          return;
+        }
+        console.log(`Bucket ${bucketName} removed.`);
+        resolve();
+      });
+    });
+  }
+
+  uploadFile(bucketName: string, fileName: string, file: any) {
+    return new Promise((resolve, reject) => {
+      MinioHandler.minioClient.putObject(bucketName, fileName, file, err => {
+        if (err) {
+          console.log("Error uploading file.", err);
+          reject(err);
+          return;
+        }
+        console.log(`File uploaded in bucket ${bucketName}.`);
+        resolve();
+      });
+    });
+  }
+
+  getPresignedUploadURL(bucketName: string, fileName: string) {
+    return new Promise((resolve, reject) => {
+      MinioHandler.minioClient.presignedPutObject(
+        bucketName,
+        fileName,
+        (err, url) => {
+          if (err) {
+            console.log("Error getting url", err);
+            reject(err);
+            return;
+          }
+          console.log(`Url retrieved ${url}`);
+          resolve(url);
+        }
+      );
+    });
+  }
+
+  getPresignedDownloadUrl(bucketName: string, fileName: string) {
+    return new Promise((resolve, reject) => {
+      MinioHandler.minioClient.presignedGetObject(
+        bucketName,
+        fileName,
+        (err, downloadUrl) => {
+          if (err) {
+            console.log("Error getting url", err);
+            reject(err);
+            return;
+          }
+          console.log(`Url retrieved ${downloadUrl}`);
+          resolve(downloadUrl);
+        }
+      );
+    });
+  }
+
+  removeFile(bucketName: string, fileName: string) {
+    return new Promise((resolve, reject) => {
+      MinioHandler.minioClient.removeObject(bucketName, fileName, err => {
+        if (err) {
+          console.log("Error removing file.", err);
+          reject(err);
+          return;
+        }
+        console.log(`File ${fileName} removed from bucket ${bucketName}.`);
+        resolve();
+      });
+    });
+  }
 }

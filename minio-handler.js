@@ -30,6 +30,71 @@ var MinioHandler = /** @class */ (function () {
             });
         });
     };
+    MinioHandler.prototype.removeBucket = function (bucketName) {
+        return new Promise(function (resolve, reject) {
+            MinioHandler.minioClient.removeBucket(bucketName, function (err) {
+                if (err) {
+                    console.log("Error removing bucket.", err);
+                    reject(err);
+                    return;
+                }
+                console.log("Bucket " + bucketName + " removed.");
+                resolve();
+            });
+        });
+    };
+    MinioHandler.prototype.uploadFile = function (bucketName, fileName, file) {
+        return new Promise(function (resolve, reject) {
+            MinioHandler.minioClient.putObject(bucketName, fileName, file, function (err) {
+                if (err) {
+                    console.log("Error uploading file.", err);
+                    reject(err);
+                    return;
+                }
+                console.log("File uploaded in bucket " + bucketName + ".");
+                resolve();
+            });
+        });
+    };
+    MinioHandler.prototype.getPresignedUploadURL = function (bucketName, fileName) {
+        return new Promise(function (resolve, reject) {
+            MinioHandler.minioClient.presignedPutObject(bucketName, fileName, function (err, url) {
+                if (err) {
+                    console.log("Error getting url", err);
+                    reject(err);
+                    return;
+                }
+                console.log("Url retrieved " + url);
+                resolve(url);
+            });
+        });
+    };
+    MinioHandler.prototype.getPresignedDownloadUrl = function (bucketName, fileName) {
+        return new Promise(function (resolve, reject) {
+            MinioHandler.minioClient.presignedGetObject(bucketName, fileName, function (err, downloadUrl) {
+                if (err) {
+                    console.log("Error getting url", err);
+                    reject(err);
+                    return;
+                }
+                console.log("Url retrieved " + downloadUrl);
+                resolve(downloadUrl);
+            });
+        });
+    };
+    MinioHandler.prototype.removeFile = function (bucketName, fileName) {
+        return new Promise(function (resolve, reject) {
+            MinioHandler.minioClient.removeObject(bucketName, fileName, function (err) {
+                if (err) {
+                    console.log("Error removing file.", err);
+                    reject(err);
+                    return;
+                }
+                console.log("File " + fileName + " removed from bucket " + bucketName + ".");
+                resolve();
+            });
+        });
+    };
     return MinioHandler;
 }());
 exports.MinioHandler = MinioHandler;
