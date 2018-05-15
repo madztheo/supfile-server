@@ -135,6 +135,15 @@ Parse.Cloud.define("uploadFile", (req, res) => {
     });
 });
 
+Parse.Cloud.beforeSave("File", (req, res) => {
+  const fileName = req.object.get("name");
+  //To keep the original name of the file
+  if (!req.object.get("fileName")) {
+    req.object.set("fileName", fileName);
+  }
+  res.success();
+});
+
 Parse.Cloud.beforeDelete("File", (req, res) => {
   if (req.master) {
     res.success("");
@@ -142,7 +151,7 @@ Parse.Cloud.beforeDelete("File", (req, res) => {
   if (!req.user || !req.object) {
     return;
   }
-  const fileName = req.object.get("name");
+  const fileName = req.object.get("fileName");
   const minioHandler = new MinioHandler();
   minioHandler
     .removeFile(createsha256Hash(req.user.id), fileName)
