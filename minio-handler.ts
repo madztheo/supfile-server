@@ -1,4 +1,5 @@
 import * as Minio from "minio";
+import * as fs from "fs";
 
 export class MinioHandler {
   private static minioClient: Minio.Client;
@@ -93,6 +94,34 @@ export class MinioHandler {
         }
       );
     });
+  }
+
+  getFile(bucketName: string, fileName: string) {
+    return MinioHandler.minioClient
+      .getObject(bucketName, fileName)
+      .then(stream => {
+        return new Promise((resolve, reject) => {
+          let file;
+          stream.on("data", chunk => {
+            if (!file) {
+              file = chunk;
+            } else {
+              file += chunk;
+            }
+          });
+
+          stream.on("end", () => {
+            resolve(file);
+          });
+          stream.on("error", err => {
+            reject(err);
+          });
+        });
+      });
+  }
+
+  getFileStream(bucketName: string, fileName: string) {
+    return MinioHandler.minioClient.getObject(bucketName, fileName);
   }
 
   removeFile(bucketName: string, fileName: string) {

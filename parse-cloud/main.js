@@ -1,21 +1,14 @@
 "use strict";
 exports.__esModule = true;
 var minio_handler_1 = require("../minio-handler");
-var crypto = require("crypto");
-function createsha256Hash(data) {
-    return crypto
-        .createHash("sha256")
-        .update(data, "utf8")
-        .digest("hex")
-        .substr(0, 63);
-}
+var crypto_function_1 = require("../crypto-function");
 function createUserStorage(req, res) {
     if (!req.user) {
         res.error("User undefined");
     }
     var minioHandler = new minio_handler_1.MinioHandler();
     minioHandler
-        .createBucket(createsha256Hash(req.user.id))
+        .createBucket(crypto_function_1.createsha256Hash(req.user.id))
         .then(function () {
         res.success("User storage created");
     })["catch"](function (err) {
@@ -29,11 +22,11 @@ Parse.Cloud.define("createUserStorage", function (req, res) {
 Parse.Cloud.afterSave(Parse.User, function (req) {
     //We create its bucket right after registration
     var minioHandler = new minio_handler_1.MinioHandler();
-    minioHandler.createBucket(createsha256Hash(req.object.id));
+    minioHandler.createBucket(crypto_function_1.createsha256Hash(req.object.id));
 });
 Parse.Cloud.afterDelete(Parse.User, function (req) {
     var minioHandler = new minio_handler_1.MinioHandler();
-    minioHandler.removeBucket(createsha256Hash(req.object.id));
+    minioHandler.removeBucket(crypto_function_1.createsha256Hash(req.object.id));
 });
 Parse.Cloud.define("getUploadUrl", function (req, res) {
     if (!req.user) {
@@ -45,7 +38,7 @@ Parse.Cloud.define("getUploadUrl", function (req, res) {
     }
     var minioHandler = new minio_handler_1.MinioHandler();
     minioHandler
-        .getPresignedUploadURL(createsha256Hash(req.user.id), fileName)
+        .getPresignedUploadURL(crypto_function_1.createsha256Hash(req.user.id), fileName)
         .then(function (url) {
         res.success({
             url: url
@@ -64,13 +57,30 @@ Parse.Cloud.define("getFileUrl", function (req, res) {
     }
     var minioHandler = new minio_handler_1.MinioHandler();
     minioHandler
-        .getPresignedDownloadUrl(createsha256Hash(req.user.id), fileName)
+        .getPresignedDownloadUrl(crypto_function_1.createsha256Hash(req.user.id), fileName)
         .then(function (url) {
         res.success({
             url: url
         });
     })["catch"](function () {
         res.error("Unable to get url");
+    });
+});
+Parse.Cloud.define("getFile", function (req, res) {
+    if (!req.user) {
+        res.error("User undefined");
+    }
+    var fileName = req.params.fileName;
+    if (!fileName) {
+        res.error("File name undefined");
+    }
+    var minioHandler = new minio_handler_1.MinioHandler();
+    minioHandler
+        .getFile(crypto_function_1.createsha256Hash(req.user.id), fileName)
+        .then(function (file) {
+        res.success(file);
+    })["catch"](function (err) {
+        res.error({ title: "Unable to get file stream", message: err });
     });
 });
 Parse.Cloud.define("uploadFile", function (req, res) {
@@ -85,7 +95,7 @@ Parse.Cloud.define("uploadFile", function (req, res) {
     }
     var minioHandler = new minio_handler_1.MinioHandler();
     minioHandler
-        .uploadFile(createsha256Hash(req.user.id), fileName, file)
+        .uploadFile(crypto_function_1.createsha256Hash(req.user.id), fileName, file)
         .then(function () {
         var createFile = function (folder) {
             var dbFile = new Parse.Object("File");
@@ -138,7 +148,7 @@ Parse.Cloud.beforeDelete("File", function (req, res) {
     var fileName = req.object.get("fileName");
     var minioHandler = new minio_handler_1.MinioHandler();
     minioHandler
-        .removeFile(createsha256Hash(req.user.id), fileName)
+        .removeFile(crypto_function_1.createsha256Hash(req.user.id), fileName)
         .then(function () {
         res.success("");
     })["catch"](function () {

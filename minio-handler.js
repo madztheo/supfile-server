@@ -82,6 +82,32 @@ var MinioHandler = /** @class */ (function () {
             });
         });
     };
+    MinioHandler.prototype.getFile = function (bucketName, fileName) {
+        return MinioHandler.minioClient
+            .getObject(bucketName, fileName)
+            .then(function (stream) {
+            return new Promise(function (resolve, reject) {
+                var file;
+                stream.on("data", function (chunk) {
+                    if (!file) {
+                        file = chunk;
+                    }
+                    else {
+                        file += chunk;
+                    }
+                });
+                stream.on("end", function () {
+                    resolve(file);
+                });
+                stream.on("error", function (err) {
+                    reject(err);
+                });
+            });
+        });
+    };
+    MinioHandler.prototype.getFileStream = function (bucketName, fileName) {
+        return MinioHandler.minioClient.getObject(bucketName, fileName);
+    };
     MinioHandler.prototype.removeFile = function (bucketName, fileName) {
         return new Promise(function (resolve, reject) {
             MinioHandler.minioClient.removeObject(bucketName, fileName, function (err) {

@@ -14,10 +14,12 @@
     "body-parser": "^1.18.2",
     "express": "^4.16.3",
     "minio": "^5.0.2",
+    "parse": "^1.11.1",
     "parse-server": "^2.7.4",
     "request": "^2.85.0"
   },
   "devDependencies": {
+    "@types/express": "^4.11.1",
     "@types/minio": "^5.1.0",
     "@types/parse": "^1.11.0",
     "@types/request": "^2.47.0"

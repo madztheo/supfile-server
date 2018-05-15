@@ -1,14 +1,6 @@
 import { MinioHandler } from "../minio-handler";
-import * as crypto from "crypto";
 import * as fs from "fs";
-
-function createsha256Hash(data: string) {
-  return crypto
-    .createHash("sha256")
-    .update(data, "utf8")
-    .digest("hex")
-    .substr(0, 63);
-}
+import { createsha256Hash } from "../crypto-function";
 
 function createUserStorage(req, res) {
   if (!req.user) {
@@ -80,6 +72,25 @@ Parse.Cloud.define("getFileUrl", (req, res) => {
     })
     .catch(() => {
       res.error("Unable to get url");
+    });
+});
+
+Parse.Cloud.define("getFile", (req, res) => {
+  if (!req.user) {
+    res.error("User undefined");
+  }
+  const fileName = req.params.fileName;
+  if (!fileName) {
+    res.error("File name undefined");
+  }
+  const minioHandler = new MinioHandler();
+  minioHandler
+    .getFile(createsha256Hash(req.user.id), fileName)
+    .then(file => {
+      res.success(file);
+    })
+    .catch(err => {
+      res.error({ title: "Unable to get file stream", message: err });
     });
 });
 

@@ -1,4 +1,4 @@
-const express = require("express");
+import * as express from "express";
 const bodyParser = require("body-parser");
 const app = express();
 const ParseServer = require("parse-server").ParseServer;
@@ -11,6 +11,8 @@ const mongoDBPassword =
   process.env.MONGO_PASSWORD || "Es0REXOXP7KC04f2kngktBNwC";
 
 import { MinioHandler } from "./minio-handler";
+import * as Parse from "parse/node";
+import { createsha256Hash } from "./crypto-function";
 
 app.use(
   bodyParser.urlencoded({
@@ -19,6 +21,20 @@ app.use(
 );
 
 app.use(bodyParser.json());
+
+app.use(function(req, res, next) {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET, POST, OPTIONS, PUT, PATCH, DELETE"
+  );
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "X-Requested-With, content-type"
+  );
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+  next();
+});
 
 const api = new ParseServer({
   databaseURI: `mongodb://${mongoDBUser}:${mongoDBPassword}@ds217970.mlab.com:17970/supfile`, // Connection string for your MongoDB database
@@ -32,6 +48,33 @@ const api = new ParseServer({
 app.use("/parse", api);
 
 MinioHandler.initializeMinio();
+
+app.post("/files/download", (req, res) => {
+  const sessionToken = req.body.sessionToken;
+  const fileName = req.body.fileName;
+  let query = new Parse.Query("File");
+  query.equalTo("fileName", fileName);
+  //We use the session token to restrict to the user
+  query.first({ sessionToken: sessionToken }).then(
+    file => {
+      if (file) {
+        const userId = file.get("user").id;
+        console.log("User id " + userId);
+        let minioHandler = new MinioHandler();
+        minioHandler.getFileStream(createsha256Hash(userId), fileName).then(
+          fileStream => {
+            res.setHeader("Content-Type", file.get("type"));
+            fileStream.pipe(res);
+          },
+          err => res.send(err)
+        );
+      } else {
+        res.sendStatus(404);
+      }
+    },
+    err => res.sendStatus(err)
+  );
+});
 
 app.listen(port, () => {
   console.log(`Server is listening on port ${port}`);
