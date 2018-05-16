@@ -69,9 +69,10 @@ var MinioHandler = /** @class */ (function () {
             });
         });
     };
-    MinioHandler.prototype.getPresignedDownloadUrl = function (bucketName, fileName) {
+    MinioHandler.prototype.getPresignedDownloadUrl = function (bucketName, fileName, expire) {
+        if (expire === void 0) { expire = 6 * 60 * 60; }
         return new Promise(function (resolve, reject) {
-            MinioHandler.minioClient.presignedGetObject(bucketName, fileName, function (err, downloadUrl) {
+            MinioHandler.minioClient.presignedGetObject(bucketName, fileName, expire, function (err, downloadUrl) {
                 if (err) {
                     console.log("Error getting url", err);
                     reject(err);

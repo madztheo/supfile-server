@@ -78,11 +78,16 @@ export class MinioHandler {
     });
   }
 
-  getPresignedDownloadUrl(bucketName: string, fileName: string) {
+  getPresignedDownloadUrl(
+    bucketName: string,
+    fileName: string,
+    expire = 6 * 60 * 60
+  ) {
     return new Promise((resolve, reject) => {
       MinioHandler.minioClient.presignedGetObject(
         bucketName,
         fileName,
+        expire,
         (err, downloadUrl) => {
           if (err) {
             console.log("Error getting url", err);

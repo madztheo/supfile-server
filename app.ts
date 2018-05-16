@@ -55,6 +55,8 @@ app.post("/files/download", (req, res) => {
   let query = new Parse.Query("File");
   query.equalTo("fileName", fileName);
   //We use the session token to restrict to the user
+  //If no session token is provided, nothing will be returned as
+  //the request will not be authorized
   query.first({ sessionToken: sessionToken }).then(
     file => {
       if (file) {
@@ -65,6 +67,9 @@ app.post("/files/download", (req, res) => {
           fileStream => {
             res.setHeader("Content-Type", file.get("type"));
             fileStream.pipe(res);
+            fileStream.on("end", () => {
+              res.end();
+            });
           },
           err => res.send(err)
         );

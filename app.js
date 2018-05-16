@@ -39,6 +39,8 @@ app.post("/files/download", function (req, res) {
     var query = new Parse.Query("File");
     query.equalTo("fileName", fileName);
     //We use the session token to restrict to the user
+    //If no session token is provided, nothing will be returned as
+    //the request will not be authorized
     query.first({ sessionToken: sessionToken }).then(function (file) {
         if (file) {
             var userId = file.get("user").id;
@@ -47,6 +49,9 @@ app.post("/files/download", function (req, res) {
             minioHandler.getFileStream(crypto_function_1.createsha256Hash(userId), fileName).then(function (fileStream) {
                 res.setHeader("Content-Type", file.get("type"));
                 fileStream.pipe(res);
+                fileStream.on("end", function () {
+                    res.end();
+                });
             }, function (err) { return res.send(err); });
         }
         else {
