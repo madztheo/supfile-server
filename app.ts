@@ -2,6 +2,10 @@ import * as express from "express";
 const bodyParser = require("body-parser");
 const app = express();
 const ParseServer = require("parse-server").ParseServer;
+import { MinioHandler } from "./minio-handler";
+import * as Parse from "parse/node";
+import { createsha256Hash } from "./crypto-function";
+import * as jszip from "jszip";
 
 const port = process.env.PORT || 1337;
 const parseMasterKey = process.env.MASTER_KEY || "KQdF126IZFZarl4mLAGu5ix6h";
@@ -9,10 +13,6 @@ const parseAppId = process.env.APP_ID || "r2iHRgNfOM8lih4";
 const mongoDBUser = process.env.MONGO_USER || "admin";
 const mongoDBPassword =
   process.env.MONGO_PASSWORD || "Es0REXOXP7KC04f2kngktBNwC";
-
-import { MinioHandler } from "./minio-handler";
-import * as Parse from "parse/node";
-import { createsha256Hash } from "./crypto-function";
 
 app.use(
   bodyParser.urlencoded({
@@ -79,6 +79,78 @@ app.post("/files/download", (req, res) => {
     },
     err => res.sendStatus(err)
   );
+});
+
+function zipFolder(
+  folder: Parse.Object,
+  sessionToken: string,
+  zip: jszip
+): Promise<jszip> {
+  const minioHandler = new MinioHandler();
+  const query = new Parse.Query("Folder");
+  query.equalTo("parent", folder);
+  const zipFiles = () => {
+    return new Parse.Query("File")
+      .equalTo("folder", folder)
+      .find({ sessionToken: sessionToken })
+      .then(files => {
+        return Promise.all(
+          files.map(file => {
+            return minioHandler
+              .getFileStream(
+                createsha256Hash((<Parse.Object>file.get("user")).id),
+                file.get("name")
+              )
+              .then(stream => {
+                return {
+                  stream,
+                  name: file.get("name")
+                };
+              });
+          })
+        ).then(minioFiles => {
+          minioFiles.forEach(file => {
+            zip.file(file.name, file.stream);
+          });
+          return zip;
+        });
+      });
+  };
+
+  return <Promise<any>>Promise.resolve(
+    query.find({ sessionToken: sessionToken }).then(folders => {
+      console.log(folder.get("name"));
+      console.log(folders.map(x => x.get("name")));
+      if (folders && folders.length >= 0) {
+        const promiseToExecute = folders.map(x => {
+          return zipFolder(x, sessionToken, zip.folder(x.get("name")));
+        });
+        return Promise.all(promiseToExecute).then(() => zipFiles());
+      }
+      return zipFiles();
+    })
+  );
+}
+
+app.post("/folders/download", (req, res) => {
+  const sessionToken = req.body.sessionToken;
+  const folderId = req.body.folderId;
+  let query = new Parse.Query("Folder");
+  query
+    .get(folderId, { sessionToken: sessionToken })
+    .then(folder => {
+      if (folder) {
+        const zip = new jszip();
+        zipFolder(folder, sessionToken, zip).then(zippedFolder => {
+          console.log(zippedFolder);
+          res.setHeader("Content-Type", "application/zip");
+          zippedFolder.generateNodeStream().pipe(res, { end: true });
+        });
+      } else {
+        res.sendStatus(404);
+      }
+    })
+    .catch(err => res.send(err));
 });
 
 app.listen(port, () => {

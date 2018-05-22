@@ -160,6 +160,7 @@ Parse.Cloud.beforeDelete("File", (req, res) => {
     res.success("");
   }
   if (!req.user || !req.object) {
+    res.error("Undefined user or object");
     return;
   }
   const fileName = req.object.get("fileName");
@@ -172,4 +173,16 @@ Parse.Cloud.beforeDelete("File", (req, res) => {
     .catch(() => {
       res.error("Unable to remove file");
     });
+});
+
+Parse.Cloud.beforeDelete("Folder", (req, res) => {
+  if (req.master) {
+    res.success("");
+  }
+  if (!req.user || !req.object) {
+    res.error("Undefined user or object");
+    return;
+  }
+  const folder = req.object;
+  const minioHandler = new MinioHandler();
 });

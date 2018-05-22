@@ -143,6 +143,7 @@ Parse.Cloud.beforeDelete("File", function (req, res) {
         res.success("");
     }
     if (!req.user || !req.object) {
+        res.error("Undefined user or object");
         return;
     }
     var fileName = req.object.get("fileName");
@@ -154,5 +155,16 @@ Parse.Cloud.beforeDelete("File", function (req, res) {
     })["catch"](function () {
         res.error("Unable to remove file");
     });
+});
+Parse.Cloud.beforeDelete("Folder", function (req, res) {
+    if (req.master) {
+        res.success("");
+    }
+    if (!req.user || !req.object) {
+        res.error("Undefined user or object");
+        return;
+    }
+    var folder = req.object;
+    var minioHandler = new minio_handler_1.MinioHandler();
 });
 //# sourceMappingURL=main.js.map
