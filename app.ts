@@ -22,6 +22,17 @@ app.use(
 
 app.use(bodyParser.json());
 
+const api = new ParseServer({
+  databaseURI: `mongodb://${mongoDBUser}:${mongoDBPassword}@ds217970.mlab.com:17970/supfile`, // Connection string for your MongoDB database
+  cloud: __dirname + "/parse-cloud/main.js", // Absolute path to your Cloud Code
+  appId: parseAppId,
+  masterKey: parseMasterKey,
+  serverURL: "http://localhost:1337/parse"
+});
+
+// Serve the Parse API on the /parse URL prefix
+app.use("/parse", api);
+
 app.use(function(req, res, next) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader(
@@ -35,17 +46,6 @@ app.use(function(req, res, next) {
   res.setHeader("Access-Control-Allow-Credentials", "true");
   next();
 });
-
-const api = new ParseServer({
-  databaseURI: `mongodb://${mongoDBUser}:${mongoDBPassword}@ds217970.mlab.com:17970/supfile`, // Connection string for your MongoDB database
-  cloud: "./parse-cloud/main.js", // Absolute path to your Cloud Code
-  appId: parseAppId,
-  masterKey: parseMasterKey,
-  serverURL: "http://localhost:1337/parse"
-});
-
-// Serve the Parse API on the /parse URL prefix
-app.use("/parse", api);
 
 MinioHandler.initializeMinio();
 

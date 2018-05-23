@@ -17,6 +17,15 @@ app.use(bodyParser.urlencoded({
     extended: false
 }));
 app.use(bodyParser.json());
+var api = new ParseServer({
+    databaseURI: "mongodb://" + mongoDBUser + ":" + mongoDBPassword + "@ds217970.mlab.com:17970/supfile",
+    cloud: __dirname + "/parse-cloud/main.js",
+    appId: parseAppId,
+    masterKey: parseMasterKey,
+    serverURL: "http://localhost:1337/parse"
+});
+// Serve the Parse API on the /parse URL prefix
+app.use("/parse", api);
 app.use(function (req, res, next) {
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, PATCH, DELETE");
@@ -24,15 +33,6 @@ app.use(function (req, res, next) {
     res.setHeader("Access-Control-Allow-Credentials", "true");
     next();
 });
-var api = new ParseServer({
-    databaseURI: "mongodb://" + mongoDBUser + ":" + mongoDBPassword + "@ds217970.mlab.com:17970/supfile",
-    cloud: "./parse-cloud/main.js",
-    appId: parseAppId,
-    masterKey: parseMasterKey,
-    serverURL: "http://localhost:1337/parse"
-});
-// Serve the Parse API on the /parse URL prefix
-app.use("/parse", api);
 minio_handler_1.MinioHandler.initializeMinio();
 app.post("/files/download", function (req, res) {
     var sessionToken = req.body.sessionToken;

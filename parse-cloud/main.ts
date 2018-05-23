@@ -1,6 +1,8 @@
 import { MinioHandler } from "../minio-handler";
 import * as fs from "fs";
 import { createsha256Hash } from "../crypto-function";
+import "./triggers";
+import "./file-sharing";
 
 function createUserStorage(req, res) {
   if (!req.user) {
@@ -19,18 +21,6 @@ function createUserStorage(req, res) {
 
 Parse.Cloud.define("createUserStorage", (req, res) => {
   createUserStorage(req, res);
-});
-
-//After user registration
-Parse.Cloud.afterSave(Parse.User, req => {
-  //We create its bucket right after registration
-  let minioHandler = new MinioHandler();
-  minioHandler.createBucket(createsha256Hash(req.object.id));
-});
-
-Parse.Cloud.afterDelete(Parse.User, req => {
-  let minioHandler = new MinioHandler();
-  minioHandler.removeBucket(createsha256Hash(req.object.id));
 });
 
 Parse.Cloud.define("getUploadUrl", (req, res) => {
@@ -73,6 +63,30 @@ Parse.Cloud.define("getFileUrl", (req, res) => {
     .catch(() => {
       res.error("Unable to get url");
     });
+});
+
+Parse.Cloud.define("getPublicFileUrl", (req, res) => {
+  const fileId = req.params.fileId;
+  if (!fileId) {
+    res.error("File id undefined");
+  }
+  let query = new Parse.Query("File");
+  query.get(fileId).then(file => {
+    const minioHandler = new MinioHandler();
+    minioHandler
+      .getPresignedDownloadUrl(
+        createsha256Hash(file.get("user").id),
+        file.get("name")
+      )
+      .then(url => {
+        res.success({
+          url
+        });
+      })
+      .catch(() => {
+        res.error("Unable to get url");
+      });
+  });
 });
 
 Parse.Cloud.define("getFile", (req, res) => {
@@ -144,45 +158,4 @@ Parse.Cloud.define("uploadFile", (req, res) => {
     .catch(() => {
       res.error("Unable to upload file");
     });
-});
-
-Parse.Cloud.beforeSave("File", (req, res) => {
-  const fileName = req.object.get("name");
-  //To keep the original name of the file
-  if (!req.object.get("fileName")) {
-    req.object.set("fileName", fileName);
-  }
-  res.success();
-});
-
-Parse.Cloud.beforeDelete("File", (req, res) => {
-  if (req.master) {
-    res.success("");
-  }
-  if (!req.user || !req.object) {
-    res.error("Undefined user or object");
-    return;
-  }
-  const fileName = req.object.get("fileName");
-  const minioHandler = new MinioHandler();
-  minioHandler
-    .removeFile(createsha256Hash(req.user.id), fileName)
-    .then(() => {
-      res.success("");
-    })
-    .catch(() => {
-      res.error("Unable to remove file");
-    });
-});
-
-Parse.Cloud.beforeDelete("Folder", (req, res) => {
-  if (req.master) {
-    res.success("");
-  }
-  if (!req.user || !req.object) {
-    res.error("Undefined user or object");
-    return;
-  }
-  const folder = req.object;
-  const minioHandler = new MinioHandler();
 });
