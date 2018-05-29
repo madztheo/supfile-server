@@ -23,6 +23,48 @@ Parse.Cloud.beforeSave("File", (req, res) => {
   res.success();
 });
 
+function updateStorageUsed(user: Parse.User, storageInfo: Parse.Object) {
+  const minioHandler = new MinioHandler();
+  let totalSize = 0;
+  minioHandler.getFilesSizes(createsha256Hash(user.id)).subscribe(size => {
+    totalSize += size;
+    storageInfo.set("used", totalSize);
+    storageInfo.set("user", user);
+    storageInfo.setACL(new Parse.ACL(user));
+    storageInfo.save(null, {
+      sessionToken: user.getSessionToken()
+    });
+  });
+}
+
+function updateStorageInfo(user: Parse.User) {
+  let storageInfoQuery = new Parse.Query("StorageInfo");
+  let totalSize = 0;
+  storageInfoQuery.equalTo("user", user);
+  storageInfoQuery
+    .first({ sessionToken: user.getSessionToken() })
+    .then(storageInfo => {
+      if (storageInfo) {
+        updateStorageUsed(user, storageInfo);
+      } else {
+        let storageInfo = new Parse.Object("StorageInfo");
+        storageInfo.set("allowed", Math.pow(10, 9) * 30);
+        updateStorageUsed(user, storageInfo);
+      }
+    })
+    .catch(() => {
+      let storageInfo = new Parse.Object("StorageInfo");
+      updateStorageUsed(user, storageInfo);
+    });
+}
+
+Parse.Cloud.afterSave("File", req => {
+  //Only when the object is created
+  if (!req.object.existed()) {
+    updateStorageInfo(req.user);
+  }
+});
+
 Parse.Cloud.beforeDelete("File", (req, res) => {
   if (req.master) {
     res.success("");
@@ -43,6 +85,10 @@ Parse.Cloud.beforeDelete("File", (req, res) => {
     });
 });
 
+Parse.Cloud.afterDelete("File", req => {
+  updateStorageInfo(req.user);
+});
+
 Parse.Cloud.beforeDelete("Folder", (req, res) => {
   if (req.master) {
     res.success("");
@@ -53,6 +99,32 @@ Parse.Cloud.beforeDelete("Folder", (req, res) => {
   }
   const folder = req.object;
   const minioHandler = new MinioHandler();
-  //TO-DO : Delete files and folders contained in it
-  res.success("");
+  let filesQuery = new Parse.Query("File");
+  filesQuery.equalTo("folder", req.object);
+  filesQuery
+    .find({ sessionToken: req.user.getSessionToken() })
+    .then(files => {
+      //First we delete all the files contained directly in the folder
+      return Parse.Object.destroyAll(files, {
+        sessionToken: req.user.getSessionToken()
+      });
+    })
+    .then(() => {
+      let foldersQuery = new Parse.Query("Folder");
+      foldersQuery.equalTo("parent", req.object);
+      return foldersQuery
+        .find({ sessionToken: req.user.getSessionToken() })
+        .then(folders => {
+          //Then we carry on with the subfolders recursively
+          return Parse.Object.destroyAll(folders, {
+            sessionToken: req.user.getSessionToken()
+          });
+        });
+    })
+    .then(() => {
+      res.success("");
+    })
+    .catch(err => {
+      res.error(err);
+    });
 });

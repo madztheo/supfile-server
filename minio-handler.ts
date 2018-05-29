@@ -1,5 +1,6 @@
 import * as Minio from "minio";
 import * as fs from "fs";
+import { Observable, Observer } from "rxjs";
 
 export class MinioHandler {
   private static minioClient: Minio.Client;
@@ -139,6 +140,19 @@ export class MinioHandler {
         }
         console.log(`File ${fileName} removed from bucket ${bucketName}.`);
         resolve();
+      });
+    });
+  }
+
+  getFilesInBucket(bucketName: string) {
+    return MinioHandler.minioClient.listObjects(bucketName);
+  }
+
+  getFilesSizes(bucketName: string): Observable<any> {
+    return Observable.create((observer: Observer<any>) => {
+      let stream = this.getFilesInBucket(bucketName);
+      stream.on("data", obj => {
+        observer.next(obj.size);
       });
     });
   }

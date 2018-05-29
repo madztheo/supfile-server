@@ -1,6 +1,7 @@
 "use strict";
 exports.__esModule = true;
 var Minio = require("minio");
+var rxjs_1 = require("rxjs");
 var MinioHandler = /** @class */ (function () {
     function MinioHandler() {
     }
@@ -119,6 +120,18 @@ var MinioHandler = /** @class */ (function () {
                 }
                 console.log("File " + fileName + " removed from bucket " + bucketName + ".");
                 resolve();
+            });
+        });
+    };
+    MinioHandler.prototype.getFilesInBucket = function (bucketName) {
+        return MinioHandler.minioClient.listObjects(bucketName);
+    };
+    MinioHandler.prototype.getFilesSizes = function (bucketName) {
+        var _this = this;
+        return rxjs_1.Observable.create(function (observer) {
+            var stream = _this.getFilesInBucket(bucketName);
+            stream.on("data", function (obj) {
+                observer.next(obj.size);
             });
         });
     };
