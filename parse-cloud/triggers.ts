@@ -19,8 +19,23 @@ Parse.Cloud.beforeSave("File", (req, res) => {
   if (!req.object.get("fileName")) {
     req.object.set("fileName", fileName);
   }
-  console.log(req.object);
-  res.success();
+  const query = new Parse.Query("File");
+  query.equalTo("name", fileName);
+  if (req.object.existed()) {
+    query.notEqualTo("objectId", req.object.id);
+  }
+  query
+    .first({
+      sessionToken: req.user.getSessionToken()
+    })
+    .then(file => {
+      if (!file) {
+        res.success();
+      } else {
+        res.error("A file with that name already exists");
+      }
+    })
+    .catch(err => res.error(err));
 });
 
 function updateStorageUsed(user: Parse.User, storageInfo: Parse.Object) {
@@ -127,4 +142,27 @@ Parse.Cloud.beforeDelete("Folder", (req, res) => {
     .catch(err => {
       res.error(err);
     });
+});
+
+Parse.Cloud.beforeSave("Folder", (req, res) => {
+  const query = new Parse.Query("Folder");
+  query.equalTo("name", req.object.get("name"));
+  if (req.object.existed()) {
+    query.notEqualTo("objectId", req.object.id);
+  }
+  query.equalTo("parent", req.object.get("parent"));
+  query
+    .first({
+      sessionToken: req.user.getSessionToken()
+    })
+    .then(folder => {
+      if (!folder) {
+        res.success();
+      } else {
+        res.error(
+          "A folder with that name already exists in the current folder"
+        );
+      }
+    })
+    .catch(err => res.error(err));
 });

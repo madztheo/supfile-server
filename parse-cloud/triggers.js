@@ -18,8 +18,23 @@ Parse.Cloud.beforeSave("File", function (req, res) {
     if (!req.object.get("fileName")) {
         req.object.set("fileName", fileName);
     }
-    console.log(req.object);
-    res.success();
+    var query = new Parse.Query("File");
+    query.equalTo("name", fileName);
+    if (req.object.existed()) {
+        query.notEqualTo("objectId", req.object.id);
+    }
+    query
+        .first({
+        sessionToken: req.user.getSessionToken()
+    })
+        .then(function (file) {
+        if (!file) {
+            res.success();
+        }
+        else {
+            res.error("A file with that name already exists");
+        }
+    })["catch"](function (err) { return res.error(err); });
 });
 function updateStorageUsed(user, storageInfo) {
     var minioHandler = new minio_handler_1.MinioHandler();
@@ -118,5 +133,25 @@ Parse.Cloud.beforeDelete("Folder", function (req, res) {
     })["catch"](function (err) {
         res.error(err);
     });
+});
+Parse.Cloud.beforeSave("Folder", function (req, res) {
+    var query = new Parse.Query("Folder");
+    query.equalTo("name", req.object.get("name"));
+    if (req.object.existed()) {
+        query.notEqualTo("objectId", req.object.id);
+    }
+    query.equalTo("parent", req.object.get("parent"));
+    query
+        .first({
+        sessionToken: req.user.getSessionToken()
+    })
+        .then(function (folder) {
+        if (!folder) {
+            res.success();
+        }
+        else {
+            res.error("A folder with that name already exists in the current folder");
+        }
+    })["catch"](function (err) { return res.error(err); });
 });
 //# sourceMappingURL=triggers.js.map
