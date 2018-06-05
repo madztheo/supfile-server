@@ -102,7 +102,7 @@ Parse.Cloud.define("getPublicFileUrl", function (req, res) {
         var minioHandler = new minio_handler_1.MinioHandler();
         //We get the url
         minioHandler
-            .getPresignedDownloadUrl(crypto_function_1.createsha256Hash(file.get("user").id), file.get("name"))
+            .getPresignedDownloadUrl(crypto_function_1.createsha256Hash(file.get("user").id), file.get("fileName"))
             .then(function (url) {
             res.success({
                 url: url

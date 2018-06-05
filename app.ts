@@ -6,6 +6,7 @@ import { MinioHandler } from "./minio-handler";
 import * as Parse from "parse/node";
 import { createsha256Hash } from "./crypto-function";
 import * as jszip from "jszip";
+import { Response } from "express-serve-static-core";
 
 const port = process.env.PORT || 1337;
 const parseMasterKey = process.env.MASTER_KEY || "KQdF126IZFZarl4mLAGu5ix6h";
@@ -62,11 +63,13 @@ app.use(function(req, res, next) {
 MinioHandler.initializeMinio();
 
 /**
- * Route to download araw  file directly
+ * Download a file
+ * @param req
+ * @param res
  */
-app.post("/files/download", (req, res) => {
-  const sessionToken = req.body.sessionToken;
-  const fileName = req.body.fileName;
+function downloadFile(req: express.Request, res: Response) {
+  const sessionToken = req.body.sessionToken || req.query.sessionToken;
+  const fileName = req.body.fileName || req.params.name;
   let query = new Parse.Query("File");
   query.equalTo("fileName", fileName);
   //We use the session token to restrict to the user
@@ -95,7 +98,13 @@ app.post("/files/download", (req, res) => {
     },
     err => res.sendStatus(err)
   );
-});
+}
+
+/**
+ * Route to download araw  file directly
+ */
+app.get("/files/download/:name", (req, res) => downloadFile(req, res));
+app.post("/files/download", (req, res) => downloadFile(req, res));
 
 /**
  * Get the zip of a folder
@@ -125,13 +134,13 @@ function zipFolder(
             return minioHandler
               .getFileStream(
                 createsha256Hash((<Parse.Object>file.get("user")).id),
-                file.get("name")
+                file.get("fileName")
               )
               .then(stream => {
                 //We add the stream along with the file's name to response array
                 return {
                   stream,
-                  name: file.get("name")
+                  name: file.get("fileName")
                 };
               });
           })
@@ -168,11 +177,13 @@ function zipFolder(
 }
 
 /**
- * Download a folder as a zip archive
+ * Download a folder
+ * @param req
+ * @param res
  */
-app.post("/folders/download", (req, res) => {
-  const sessionToken = req.body.sessionToken;
-  const folderId = req.body.folderId;
+function downloadFolder(req: express.Request, res: Response) {
+  const sessionToken = req.body.sessionToken || req.query.sessionToken;
+  const folderId = req.body.folderId || req.params.id;
   //Get the folder from id given in the parameters
   let query = new Parse.Query("Folder");
   query
@@ -195,7 +206,13 @@ app.post("/folders/download", (req, res) => {
       }
     })
     .catch(err => res.send(err));
-});
+}
+
+/**
+ * Download a folder as a zip archive
+ */
+app.get("/folders/download/:id", (req, res) => downloadFolder(req, res));
+app.post("/folders/download", (req, res) => downloadFolder(req, res));
 
 app.listen(port, () => {
   console.log(`Server is listening on port ${port}`);

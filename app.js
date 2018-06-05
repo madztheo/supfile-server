@@ -46,11 +46,13 @@ app.use(function (req, res, next) {
 //We initialize the connection to Minio
 minio_handler_1.MinioHandler.initializeMinio();
 /**
- * Route to download araw  file directly
+ * Download a file
+ * @param req
+ * @param res
  */
-app.post("/files/download", function (req, res) {
-    var sessionToken = req.body.sessionToken;
-    var fileName = req.body.fileName;
+function downloadFile(req, res) {
+    var sessionToken = req.body.sessionToken || req.query.sessionToken;
+    var fileName = req.body.fileName || req.params.name;
     var query = new Parse.Query("File");
     query.equalTo("fileName", fileName);
     //We use the session token to restrict to the user
@@ -74,7 +76,12 @@ app.post("/files/download", function (req, res) {
             res.sendStatus(404);
         }
     }, function (err) { return res.sendStatus(err); });
-});
+}
+/**
+ * Route to download araw  file directly
+ */
+app.get("/files/download/:name", function (req, res) { return downloadFile(req, res); });
+app.post("/files/download", function (req, res) { return downloadFile(req, res); });
 /**
  * Get the zip of a folder
  * @param folder Folder
@@ -95,12 +102,12 @@ function zipFolder(folder, sessionToken, zip) {
             return Promise.all(files.map(function (file) {
                 //We get the stream of the file
                 return minioHandler
-                    .getFileStream(crypto_function_1.createsha256Hash(file.get("user").id), file.get("name"))
+                    .getFileStream(crypto_function_1.createsha256Hash(file.get("user").id), file.get("fileName"))
                     .then(function (stream) {
                     //We add the stream along with the file's name to response array
                     return {
                         stream: stream,
-                        name: file.get("name")
+                        name: file.get("fileName")
                     };
                 });
             })).then(function (minioFiles) {
@@ -133,11 +140,13 @@ function zipFolder(folder, sessionToken, zip) {
     }));
 }
 /**
- * Download a folder as a zip archive
+ * Download a folder
+ * @param req
+ * @param res
  */
-app.post("/folders/download", function (req, res) {
-    var sessionToken = req.body.sessionToken;
-    var folderId = req.body.folderId;
+function downloadFolder(req, res) {
+    var sessionToken = req.body.sessionToken || req.query.sessionToken;
+    var folderId = req.body.folderId || req.params.id;
     //Get the folder from id given in the parameters
     var query = new Parse.Query("Folder");
     query
@@ -157,7 +166,12 @@ app.post("/folders/download", function (req, res) {
             res.sendStatus(404);
         }
     })["catch"](function (err) { return res.send(err); });
-});
+}
+/**
+ * Download a folder as a zip archive
+ */
+app.get("/folders/download/:id", function (req, res) { return downloadFolder(req, res); });
+app.post("/folders/download", function (req, res) { return downloadFolder(req, res); });
 app.listen(port, function () {
     console.log("Server is listening on port " + port);
 });
