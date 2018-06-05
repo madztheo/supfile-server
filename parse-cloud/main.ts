@@ -4,11 +4,28 @@ import { createsha256Hash } from "../crypto-function";
 import "./triggers";
 import "./file-sharing";
 
-function createUserStorage(req, res) {
+/**
+ * Create a bucket for a user
+ * @param req
+ * @param res
+ */
+function createUserStorage(
+  req: Parse.Cloud.FunctionRequest,
+  res: Parse.Cloud.FunctionResponse
+) {
   if (!req.user) {
+    //We can't create a bucket for an undefined user
     res.error("User undefined");
+    return;
   }
   let minioHandler = new MinioHandler();
+  /**
+   * We create the bucket named from the 63 first characters of the SHA 256 hash (not salted)
+   * of the user id. We could have just used the user id as the name of the bucket, but
+   * bucket names don't support capital letters while our user ids have some. And to avoid
+   * possible (even if very unlikely) collisions between same ids but with different capitalization
+   * we take the hash of the id instead.
+   */
   minioHandler
     .createBucket(createsha256Hash(req.user.id))
     .then(() => {
@@ -19,19 +36,28 @@ function createUserStorage(req, res) {
     });
 }
 
+/**
+ * Create the user storage (Not used)
+ */
 Parse.Cloud.define("createUserStorage", (req, res) => {
   createUserStorage(req, res);
 });
 
+/**
+ * Get a url to upload a file to by giving its name beforehand
+ */
 Parse.Cloud.define("getUploadUrl", (req, res) => {
   if (!req.user) {
     res.error("User undefined");
+    return;
   }
   const fileName = req.params.fileName;
   if (!fileName) {
     res.error("File name undefined");
+    return;
   }
   const minioHandler = new MinioHandler();
+  //We get the url for file with the given name and in the bucket correspond to the user
   minioHandler
     .getPresignedUploadURL(createsha256Hash(req.user.id), fileName)
     .then(url => {
@@ -44,15 +70,21 @@ Parse.Cloud.define("getUploadUrl", (req, res) => {
     });
 });
 
+/**
+ * Get the url to view or download a file
+ */
 Parse.Cloud.define("getFileUrl", (req, res) => {
   if (!req.user) {
     res.error("User undefined");
+    return;
   }
   const fileName = req.params.fileName;
   if (!fileName) {
     res.error("File name undefined");
+    return;
   }
   const minioHandler = new MinioHandler();
+  //We get the url by specifying the bucket name (hash of user's id) and the file's name
   minioHandler
     .getPresignedDownloadUrl(createsha256Hash(req.user.id), fileName)
     .then(url => {
@@ -65,14 +97,20 @@ Parse.Cloud.define("getFileUrl", (req, res) => {
     });
 });
 
+/**
+ * Get the url to view or download a public file from another user
+ */
 Parse.Cloud.define("getPublicFileUrl", (req, res) => {
   const fileId = req.params.fileId;
   if (!fileId) {
     res.error("File id undefined");
+    return;
   }
+  //We look for the file with the id given in parameters
   let query = new Parse.Query("File");
   query.get(fileId).then(file => {
     const minioHandler = new MinioHandler();
+    //We get the url
     minioHandler
       .getPresignedDownloadUrl(
         createsha256Hash(file.get("user").id),
@@ -89,13 +127,18 @@ Parse.Cloud.define("getPublicFileUrl", (req, res) => {
   });
 });
 
+/**
+ * Get raw file (considered as Blob on client side) from data storage
+ */
 Parse.Cloud.define("getFile", (req, res) => {
   if (!req.user) {
     res.error("User undefined");
+    return;
   }
   const fileName = req.params.fileName;
   if (!fileName) {
     res.error("File name undefined");
+    return;
   }
   const minioHandler = new MinioHandler();
   minioHandler
@@ -108,9 +151,13 @@ Parse.Cloud.define("getFile", (req, res) => {
     });
 });
 
+/**
+ * Upload a raw file to data storage (not used)
+ */
 Parse.Cloud.define("uploadFile", (req, res) => {
   if (!req.user) {
     res.error("User undefined");
+    return;
   }
   const file = req.params.file;
   const fileName = req.params.fileName;
