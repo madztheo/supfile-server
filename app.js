@@ -179,6 +179,17 @@ function downloadFolder(req, res) {
  */
 app.get("/folders/download/:id", function (req, res) { return downloadFolder(req, res); });
 app.post("/folders/download", function (req, res) { return downloadFolder(req, res); });
+/**
+ * We serve the static files put in the www folder
+ */
+app.use(express.static("www"));
+/**
+ * Even though index.html will be already served as a static file
+ * we add this route to let Angular handle the routing
+ */
+app.get("*", function (req, res) {
+    res.sendFile(__dirname + "/www/index.html");
+});
 app.listen(port, function () {
     console.log("Server is listening on port " + port);
 });
