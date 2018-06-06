@@ -70,6 +70,7 @@ MinioHandler.initializeMinio();
 function downloadFile(req: express.Request, res: Response) {
   const sessionToken = req.body.sessionToken || req.query.sessionToken;
   const fileName = req.body.fileName || req.params.name;
+  const forceDownload = req.body.forceDownload || req.query.forceDownload;
   let query = new Parse.Query("File");
   query.equalTo("fileName", fileName);
   //We use the session token to restrict to the user
@@ -84,6 +85,12 @@ function downloadFile(req: express.Request, res: Response) {
         minioHandler.getFileStream(createsha256Hash(userId), fileName).then(
           fileStream => {
             res.setHeader("Content-Type", file.get("type"));
+            if (forceDownload) {
+              res.setHeader(
+                "Content-Disposition",
+                `attachment; filename="${file.get("name")}"`
+              );
+            }
             //We associate the stream to the response
             fileStream.pipe(res);
             fileStream.on("end", () => {
@@ -196,6 +203,10 @@ function downloadFolder(req: express.Request, res: Response) {
           //We get a stream of the zip. So we pipe it to response.
           //We also specify in the header that the response is a zip archive
           res.setHeader("Content-Type", "application/zip");
+          res.setHeader(
+            "Content-Disposition",
+            `attachment; filename="${folder.get("name")}.zip"`
+          );
           zippedFolder.generateNodeStream().pipe(
             res,
             { end: true }
