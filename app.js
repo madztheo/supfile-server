@@ -14,6 +14,8 @@ var parseAppId = process.env.APP_ID || "r2iHRgNfOM8lih4";
 var mongoDBUri = process.env.MONGO_URI ||
     "mongodb://admin:Es0REXOXP7KC04f2kngktBNwC@ds217970.mlab.com:17970/supfile";
 var serverUrl = process.env.SERVER_URL || "http://localhost:1337/parse";
+var minioAccessKey = process.env.MINIO_ACCESS_KEY || "S40WFAXPERNK35QQME38";
+var minioSecretKey = process.env.MINIO_SECRET_KEY || "AIAlQvfg+9JWhQgVc9quEphqbG2iJv1Vu35pKL8z";
 app.use(bodyParser.urlencoded({
     extended: false
 }));
@@ -44,7 +46,7 @@ app.use(function (req, res, next) {
     next();
 });
 //We initialize the connection to Minio
-minio_handler_1.MinioHandler.initializeMinio();
+minio_handler_1.MinioHandler.initializeMinio(minioAccessKey, minioSecretKey);
 /**
  * Download a file
  * @param req

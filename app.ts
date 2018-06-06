@@ -15,6 +15,9 @@ const mongoDBUri =
   process.env.MONGO_URI ||
   "mongodb://admin:Es0REXOXP7KC04f2kngktBNwC@ds217970.mlab.com:17970/supfile";
 const serverUrl = process.env.SERVER_URL || "http://localhost:1337/parse";
+const minioAccessKey = process.env.MINIO_ACCESS_KEY || "S40WFAXPERNK35QQME38";
+const minioSecretKey =
+  process.env.MINIO_SECRET_KEY || "AIAlQvfg+9JWhQgVc9quEphqbG2iJv1Vu35pKL8z";
 
 app.use(
   bodyParser.urlencoded({
@@ -60,7 +63,7 @@ app.use(function(req, res, next) {
 });
 
 //We initialize the connection to Minio
-MinioHandler.initializeMinio();
+MinioHandler.initializeMinio(minioAccessKey, minioSecretKey);
 
 /**
  * Download a file
