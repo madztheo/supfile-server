@@ -8,16 +8,19 @@ import { createsha256Hash } from "./crypto-function";
 import * as jszip from "jszip";
 import { Response } from "express-serve-static-core";
 
-const port = process.env.PORT || 1337;
-const parseMasterKey = process.env.MASTER_KEY || "KQdF126IZFZarl4mLAGu5ix6h";
-const parseAppId = process.env.APP_ID || "r2iHRgNfOM8lih4";
+const port = process.env.NODE_APP_PORT || 1337;
+const parseMasterKey =
+  process.env.PARSE_MASTER_KEY || "KQdF126IZFZarl4mLAGu5ix6h";
+const parseAppId = process.env.PARSE_APP_ID || "r2iHRgNfOM8lih4";
 const mongoDBUri =
   process.env.MONGO_URI ||
   "mongodb://admin:Es0REXOXP7KC04f2kngktBNwC@ds217970.mlab.com:17970/supfile";
-const serverUrl = process.env.SERVER_URL || "http://localhost:1337/parse";
+const serverUrl = process.env.PARSE_SERVER_URL || "http://localhost:1337/parse";
 const minioAccessKey = process.env.MINIO_ACCESS_KEY || "S40WFAXPERNK35QQME38";
 const minioSecretKey =
   process.env.MINIO_SECRET_KEY || "AIAlQvfg+9JWhQgVc9quEphqbG2iJv1Vu35pKL8z";
+const minioHostname = process.env.MINIO_HOSTNAME || "127.0.0.1";
+const minioPort = process.env.MINIO_PORT || 9000;
 
 app.use(
   bodyParser.urlencoded({
@@ -63,7 +66,12 @@ app.use(function(req, res, next) {
 });
 
 //We initialize the connection to Minio
-MinioHandler.initializeMinio(minioAccessKey, minioSecretKey);
+MinioHandler.initializeMinio(
+  minioAccessKey,
+  minioSecretKey,
+  minioHostname,
+  minioPort
+);
 
 /**
  * Download a file

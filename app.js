@@ -8,14 +8,16 @@ var minio_handler_1 = require("./minio-handler");
 var Parse = require("parse/node");
 var crypto_function_1 = require("./crypto-function");
 var jszip = require("jszip");
-var port = process.env.PORT || 1337;
-var parseMasterKey = process.env.MASTER_KEY || "KQdF126IZFZarl4mLAGu5ix6h";
-var parseAppId = process.env.APP_ID || "r2iHRgNfOM8lih4";
+var port = process.env.NODE_APP_PORT || 1337;
+var parseMasterKey = process.env.PARSE_MASTER_KEY || "KQdF126IZFZarl4mLAGu5ix6h";
+var parseAppId = process.env.PARSE_APP_ID || "r2iHRgNfOM8lih4";
 var mongoDBUri = process.env.MONGO_URI ||
     "mongodb://admin:Es0REXOXP7KC04f2kngktBNwC@ds217970.mlab.com:17970/supfile";
-var serverUrl = process.env.SERVER_URL || "http://localhost:1337/parse";
+var serverUrl = process.env.PARSE_SERVER_URL || "http://localhost:1337/parse";
 var minioAccessKey = process.env.MINIO_ACCESS_KEY || "S40WFAXPERNK35QQME38";
 var minioSecretKey = process.env.MINIO_SECRET_KEY || "AIAlQvfg+9JWhQgVc9quEphqbG2iJv1Vu35pKL8z";
+var minioHostname = process.env.MINIO_HOSTNAME || "127.0.0.1";
+var minioPort = process.env.MINIO_PORT || 9000;
 app.use(bodyParser.urlencoded({
     extended: false
 }));
@@ -46,7 +48,7 @@ app.use(function (req, res, next) {
     next();
 });
 //We initialize the connection to Minio
-minio_handler_1.MinioHandler.initializeMinio(minioAccessKey, minioSecretKey);
+minio_handler_1.MinioHandler.initializeMinio(minioAccessKey, minioSecretKey, minioHostname, minioPort);
 /**
  * Download a file
  * @param req
