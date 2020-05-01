@@ -6,7 +6,9 @@
   "scripts": {
     "start": "node app.js",
     "minio-server": "sudo minio server /data",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "snyk-protect": "snyk protect",
+    "prepare": "npm run snyk-protect"
   },
   "author": "",
   "license": "ISC",
@@ -18,7 +20,8 @@
     "parse": "^1.11.1",
     "parse-server": "^2.8.1",
     "request": "^2.85.0",
-    "rxjs": "^6.2.0"
+    "rxjs": "^6.2.0",
+    "snyk": "^1.316.1"
   },
   "devDependencies": {
     "@types/express": "^4.11.1",
@@ -26,5 +29,6 @@
     "@types/minio": "^5.1.0",
     "@types/parse": "^1.11.0",
     "@types/request": "^2.47.0"
-  }
+  },
+  "snyk": true
 }
