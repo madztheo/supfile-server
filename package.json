@@ -16,7 +16,7 @@
     "jszip": "^3.1.5",
     "minio": "^5.0.2",
     "parse": "^1.11.1",
-    "parse-server": "^2.8.1",
+    "parse-server": "^5.5.0",
     "request": "^2.85.0",
     "rxjs": "^6.2.0"
   },
